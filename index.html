@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Four Unbound — Playable prototype</title>
+<style>
+  :root { color-scheme:dark; --bg:#0b1220; --panel:#141f31; --panel2:#19283d; --border:#30425a; --muted:#a4b5c8; --fg:#eef5fc; --accent:#ffbd69; --cell:52px; --gap:5px; font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; color:var(--fg); background:radial-gradient(ellipse at 10% -10%,#213452 0%,#0b1220 55%); }
+  button,select,input { font:inherit; }
+  button { cursor:pointer; }
+  button:focus-visible,select:focus-visible,input:focus-visible { outline:3px solid #8ccaf4; outline-offset:2px; }
+  .shell { width:min(1170px,100%); margin:0 auto; padding:24px 22px 30px; }
+  .masthead { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:16px; margin-bottom:20px; }
+  .logo { font-size:clamp(24px,3vw,36px); line-height:1.0; font-weight:900; letter-spacing:-1.1px; text-transform:uppercase; }
+  .logo span { color:var(--accent); }
+  .subtitle { margin-top:7px; color:var(--muted); font-size:13px; letter-spacing:.2px; }
+  .top-actions { display:flex; align-items:center; flex-wrap:wrap; gap:9px; }
+  .button { min-height:38px; border:1px solid var(--border); border-radius:9px; background:#24344d; color:var(--fg); padding:8px 13px; font-weight:700; font-size:13px; transition:background .15s; }
+  .button:hover:not(:disabled) { background:#36506d; }
+  .button.primary { background:var(--accent); border-color:var(--accent); color:#21202b; }
+  .button.primary:hover { background:#ffd39c; }
+  .button:disabled { opacity:.38; cursor:not-allowed; }
+  .layout { display:grid; grid-template-columns:minmax(0,1fr) 295px; align-items:start; gap:18px; }
+  .stage,.side { background:rgba(20,31,49,.96); border:1px solid var(--border); border-radius:18px; overflow:hidden; box-shadow:0 10px 32px #02071340; }
+  .stage { min-width:0; }
+  .status { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:18px 20px 14px; }
+  .state-title { font-weight:800; font-size:18px; min-height:22px; }
+  .state-sub { color:var(--muted); font-size:12px; margin-top:4px; }
+  .pill { color:#dce9fb; border:1px solid #3b526d; font-size:12px; font-variant-numeric:tabular-nums; background:#1c2d45; padding:7px 10px; border-radius:99px; white-space:nowrap; }
+  .play-frame { background:linear-gradient(155deg,#0e1c30,#0f1b2c); border-top:1px solid #2a3c55; border-bottom:1px solid #2a3c55; min-height:390px; padding:22px 12px 24px; }
+  .play-line { display:flex; align-items:center; justify-content:center; gap:8px; min-width:0; }
+  .scroll { min-width:0; max-width:100%; overflow-x:auto; overflow-y:visible; padding:2px 0 10px; scrollbar-color:#54708c transparent; scrollbar-width:thin; }
+  .board { width:max-content; margin:0 auto; --ncol:7; }
+  .drop-buttons,.cells { display:grid; grid-template-columns:repeat(var(--ncol),var(--cell)); gap:var(--gap); }
+  .drop-buttons { margin-bottom:8px; }
+  .drop { position:relative; width:var(--cell); height:34px; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:8px; border:1px solid transparent; background:#1b304c; color:#8297b1; font-weight:800; }
+  .drop:disabled { opacity:.4; cursor:default; }
+  .drop:hover:not(:disabled),.drop:focus-visible { border-color:var(--accent); color:var(--accent); background:#344760; }
+  .drop .number { font-size:11px; position:absolute; left:5px; top:3px; color:#8098b2; }
+  .drop .arrow { font-size:19px; line-height:1; }
+  .drop .winning-dot { position:absolute; width:7px; height:7px; right:5px; top:5px; border-radius:99px; background:var(--accent); box-shadow:0 0 10px var(--accent); }
+  .cells { border-radius:13px; padding:9px; background:linear-gradient(150deg,#335b8b,#203d66); border:1px solid #5e7da2; box-shadow:0 8px 0 #101d31,0 15px 25px #050c18b0; }
+  .cell { width:var(--cell); height:var(--cell); border-radius:50%; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 44% 41%,#0b1626 48%,#1c3657 78%); box-shadow:inset 0 3px 7px #000b1b80,0 1px 1px #7294ba66; border:1px solid #162c48; position:relative; }
+  .cell.p0 { background:radial-gradient(circle at 33% 25%,#ffd4a3,#ffb452 54%,#bf692a 100%); border:1px solid #ffdcab; box-shadow:inset -3px -5px 8px #853c1a9c,0 1px 2px #0008; }
+  .cell.p1 { background:radial-gradient(circle at 33% 25%,#a7f9e8,#36c2a9 54%,#138b7d 100%); border:1px solid #b2f7ed; box-shadow:inset -3px -5px 8px #09594da0,0 1px 2px #0008; }
+  .cell.p2 { background:radial-gradient(circle at 33% 25%,#ddd0ff,#ae86ff 54%,#7043aa 100%); border:1px solid #dacbfa; box-shadow:inset -3px -5px 8px #432682a0,0 1px 2px #0008; }
+  .cell.p3 { background:radial-gradient(circle at 33% 25%,#ffc8d8,#ff7799 54%,#aa375e 100%); border:1px solid #ffd0d9; box-shadow:inset -3px -5px 8px #7b1643a0,0 1px 2px #0008; }
+  .cell.latest:after { content:""; position:absolute; inset:31%; background:#ffffffbc; border-radius:99px; }
+  .cell.winline { outline:3px solid #fff9c8; outline-offset:1px; z-index:1; }
+  .cell.hint { border:2px dashed #fbd39d; }
+  .edge-button { width:60px; min-width:60px; min-height:115px; padding:10px 4px; color:#eecb9b; font-size:12px; line-height:1.4; font-weight:700; border:1px dashed #b7894c; border-radius:9px; background:#b7894c16; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; }
+  .edge-button strong { font-size:20px; line-height:1; }
+  .edge-button:disabled { opacity:.2; cursor:default; }
+  .edge-button:hover:not(:disabled) { background:#b7894c35; border-style:solid; }
+  .info-footer { padding:14px 19px 16px; color:var(--muted); font-size:12px; line-height:1.55; }
+  .info-footer strong { color:#d5e6f8; }
+  .side { padding:19px; display:flex; flex-direction:column; gap:19px; }
+  .section-title { font-size:11px; text-transform:uppercase; letter-spacing:1.3px; color:#99aac3; font-weight:900; margin:0 0 10px; }
+  .settings { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+  .setting label { display:block; font-size:12px; color:#aebfd3; font-weight:700; margin-bottom:6px; }
+  select { width:100%; color:#eff6fd; border:1px solid #45607e; border-radius:8px; padding:9px 8px; background:#1d3049; font-size:13px; }
+  .wide { grid-column:1 / -1; }
+  .players { display:flex; flex-direction:column; gap:8px; }
+  .player { display:flex; align-items:center; gap:10px; border:1px solid #304760; border-radius:10px; padding:10px 9px; background:#192a41; }
+  .player.active { border-color:#e7b775; background:#2c3545; }
+  .player .disc { width:18px; height:18px; border-radius:50%; flex:0 0 18px; box-shadow:inset -2px -2px 3px #0005; }
+  .player .name { flex:1; font-size:13px; font-weight:800; }
+  .player .role { font-size:10px; color:var(--muted); }
+  .rule { height:1px; background:#2d425b; }
+  .toggle { display:flex; align-items:center; gap:9px; font-size:12px; color:#d2e2f4; cursor:pointer; }
+  .toggle input { accent-color:#ffbd69; width:17px; height:17px; }
+  .metrics { display:flex; justify-content:space-between; gap:8px; color:#afc4dd; font-size:12px; }
+  .metrics strong { color:#f4f8fc; }
+  .micro { font-size:11px; line-height:1.6; color:#96aeca; }
+  .wins { background:#263447; border-radius:10px; padding:10px 12px; font-size:12px; line-height:1.6; }
+  .wins[hidden] { display:none; }
+  @media(max-width:840px) { .layout { grid-template-columns:1fr; } .side { display:grid; grid-template-columns:1fr 1fr; gap:18px; } .side > .wide-on-mobile { grid-column:1 / -1; } }
+  @media(max-width:560px) { :root { --cell:35px; --gap:4px; } .shell { padding:16px 8px 25px; } .masthead { padding:0 8px; } .logo { font-size:25px; } .side { display:flex; } .play-frame { padding:16px 5px; min-height:340px; } .edge-button { width:35px; min-width:35px; font-size:10px; padding:5px 2px; } .edge-button strong { font-size:17px; } .play-line { gap:3px; } .cells { padding:5px; } .status { padding:15px 13px; } .state-title { font-size:16px; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="masthead">
+    <div><div class="logo">FOUR <span>UNBOUND</span></div><div class="subtitle">An expanding Connect Four experiment · gravity stays on</div></div>
+    <div class="top-actions"><button class="button" id="undo" type="button">↶ Undo round</button><button class="button primary" id="reset" type="button">↻ New game</button></div>
+  </header>
+  <main class="layout">
+    <section class="stage" aria-label="Connect Four board">
+      <div class="status"><div><div class="state-title" id="status" aria-live="polite">Your turn</div><div class="state-sub" id="detail">Drop a piece into a column.</div></div><div class="pill" id="dimensions">7 × 6 · Move 0</div></div>
+      <div class="play-frame"><div class="play-line">
+        <button type="button" class="edge-button" id="growLeft" title="Place in a new left column when the bottom row has at most (players - 2) empty cells"><strong>＋←</strong>new<br>left</button>
+        <div class="scroll" id="scroll"><div class="board" id="board"><div class="drop-buttons" id="drops" aria-label="Choose a column"></div><div class="cells" id="cells"></div></div></div>
+        <button type="button" class="edge-button" id="growRight" title="Place in a new right column when the bottom row has at most (players - 2) empty cells"><strong>→＋</strong>new<br>right</button>
+      </div></div>
+      <div class="info-footer"><strong>Expansion rules:</strong> Pieces fall to the lowest free space. A full column grows the board upward when played. When the bottom row has at most (number of players − 2) empty cells left, you can place a piece in a brand-new left or right column. First to connect four wins.</div>
+    </section>
+    <aside class="side" aria-label="Game options">
+      <div><h2 class="section-title">Match settings</h2><div class="settings">
+        <div class="setting"><label for="count">Players</label><select id="count"><option value="2">2 (1 bot)</option><option value="3" selected>3 (2 bots)</option><option value="4">4 (3 bots)</option></select></div>
+        <div class="setting"><label for="difficulty">Bot intelligence</label><select id="difficulty"><option value="casual">Casual</option><option value="tactical" selected>Tactical</option><option value="strategic">Strategic</option></select></div>
+        <div class="setting"><label for="size">Starting board</label><select id="size"><option value="7x6" selected>7 × 6</option><option value="9x8">9 × 8</option><option value="11x8">11 × 8</option><option value="5x4">5 × 4</option></select></div>
+        <div class="setting"><label for="start">You play</label><select id="start"><option value="first" selected>First</option><option value="last">Last</option></select></div>
+      </div></div>
+      <div><h2 class="section-title">Turn order</h2><div class="players" id="players"></div></div>
+      <div class="wide-on-mobile"><div class="rule" style="margin-bottom:17px"></div><label class="toggle"><input type="checkbox" id="hints" checked> Highlight my immediate winning moves</label><div class="metrics" style="margin-top:15px"><span>Games won: <strong id="wins">0</strong></span><span>Games lost: <strong id="losses">0</strong></span></div><div class="wins" id="winbanner" hidden></div><p class="micro">Click a column arrow or any cell to drop a piece. Side arrows unlock at 0, 1, or 2 empty bottom-row cells for 2, 3, or 4 players respectively. Change player count, board size or starting order to restart. Undo rewinds your whole last round.</p></div>
+    </aside>
+  </main>
+</div>
+<script>
+(() => {
+  'use strict';
+  const colors = ['#ffb452','#36c2a9','#ae86ff','#ff7799'];
+  const names = ['You','Bot A','Bot B','Bot C'];
+  const $ = id => document.getElementById(id);
+  const ui = { status:$('status'), detail:$('detail'), dimensions:$('dimensions'), board:$('board'), cells:$('cells'), drops:$('drops'), players:$('players'), scroll:$('scroll'), growLeft:$('growLeft'), growRight:$('growRight'), count:$('count'), difficulty:$('difficulty'), size:$('size'), start:$('start'), hints:$('hints'), undo:$('undo'), reset:$('reset'), wins:$('wins'), losses:$('losses'), winbanner:$('winbanner') };
+  let state, roundHistory=[], timer=null, generation=0, results={win:0,loss:0}, lastColumns=0;
+  function fresh() { const [cols,rows]=ui.size.value.split('x').map(Number); const n=Number(ui.count.value); return { board:Array.from({length:rows},()=>Array(cols).fill(null)), cols, rows, n, current:ui.start.value==='first'?0:1, winner:null, winning:[], last:null, moves:0 }; }
+  function copyState(s) { return {...s,board:s.board.map(row=>row.slice()),last:s.last?{...s.last}:null,winning:s.winning.map(v=>({...v}))}; }
+  function canExpand(s) { return s.board[0].filter(x=>x===null).length <= s.n - 2; }
+  function legalMoves(s) { if(s.winner!==null) return []; const a=Array.from({length:s.cols},(_,i)=>i); if(canExpand(s)){a.push('left','right')} return a; }
+  function findDropRow(s,col) { for(let r=0;r<s.rows;r++)if(s.board[r][col]===null) return r; return s.rows; }
+  function findWin(s,row,col,player) {
+    for(const [dx,dy] of [[1,0],[0,1],[1,1],[1,-1]]){
+      const seq=[{row,col}];
+      for(const sign of [-1,1]) for(let d=1;d<4;d++){
+        const c=col+dx*d*sign, r=row+dy*d*sign;
+        if(c<0||c>=s.cols||r<0||r>=s.rows||s.board[r][c]!==player)break;
+        seq.push({row:r,col:c});
+      }
+      if(seq.length>=4)return seq;
+    }
+    return [];
+  }
+  function afterMove(s,move,player) {
+    if(s.winner!==null) return null;
+    const t=copyState(s);
+    let col;
+    if(move==='left'||move==='right') {
+      if(!canExpand(t))return null;
+      for(const row of t.board) { if(move==='left')row.unshift(null);else row.push(null); }
+      t.cols++; col=move==='left'?0:t.cols-1;
+    }else {col=Number(move);if(!Number.isInteger(col)||col<0||col>=t.cols)return null;}
+    const r=findDropRow(t,col);
+    if(r===t.rows){t.board.push(Array(t.cols).fill(null));t.rows++;}
+    t.board[r][col]=player;
+    t.last={row:r,col,player,move}; t.moves++;
+    t.winning=findWin(t,r,col,player);
+    if(t.winning.length)t.winner=player;
+    else t.current=(player+1)%t.n;
+    return t;
+  }
+  function winningMoves(s,player) {
+    const out=[];
+    for(const m of legalMoves(s)) {const t=afterMove(s,m,player);if(t&&t.winner===player)out.push(m);}
+    return out;
+  }
+  function patternUtilities(s) {
+    if(s.winner!==null)return Array.from({length:s.n},(_,p)=>p===s.winner?1000000:-1000000);
+    const u=Array(s.n).fill(0);
+    for(let r=0;r<s.rows;r++)for(let c=0;c<s.cols;c++){
+      const p=s.board[r][c];if(p!==null)u[p]+=0.45+0.8*(1-Math.abs(c-(s.cols-1)/2)/Math.max(1,s.cols/2));
+      for(const [dx,dy] of [[1,0],[0,1],[1,1],[1,-1]]) {
+        const rr=r+dy*3,cc=c+dx*3;
+        if(rr<0||rr>=s.rows||cc<0||cc>=s.cols)continue;
+        let owner=null,count=0,blocked=false,empty=[];
+        for(let i=0;i<4;i++){
+          const x=c+i*dx,y=r+i*dy,v=s.board[y][x];
+          if(v===null)empty.push([y,x]);
+          else if(owner===null){owner=v;count++;}
+          else if(v===owner)count++;
+          else {blocked=true;break;}
+        }
+        if(blocked||owner===null)continue;
+        if(count===1){u[owner]+=0.4;continue;}
+        if(count===2){u[owner]+=7;continue;}
+        if(count===3){
+          const [er,ec]=empty[0];const steps=er-findDropRow(s,ec);
+          u[owner]+=steps===0?220:Math.max(6,64/(1+Math.max(0,steps)));
+        }
+      }
+    }
+    return u;
+  }
+  function projectedScore(s,move,player) {
+    const t=afterMove(s,move,player);if(!t)return -1e10;
+    if(t.winner===player)return 1e9;
+    const u=patternUtilities(t);
+    let score=u[player]*1.5;
+    for(let p=0;p<t.n;p++)if(p!==player)score-=u[p]*(p===(player+1)%t.n?1.05:.66);
+    let dist=1;
+    for(let p=(player+1)%t.n;p!==player;p=(p+1)%t.n,dist++){
+      const threats=winningMoves(t,p).length;
+      if(threats)score-=(dist===1?60000:18000)*threats;
+    }
+    const ownThreats=winningMoves(t,player).length;
+    score+=ownThreats*270;
+    if(move==='left'||move==='right')score-=4;
+    return score;
+  }
+  function orderedMoves(s,player,limit=999) {
+    const candidates=legalMoves(s).map(move=>({move,score:projectedScore(s,move,player)}));
+    candidates.sort((a,b)=>b.score-a.score);
+    return candidates.slice(0,limit);
+  }
+  function maxNSearch(s,depth,beam) {
+    if(depth===0||s.winner!==null)return patternUtilities(s);
+    const actor=s.current;
+    const moves=orderedMoves(s,actor,beam);
+    let best=null,bestV=-Infinity;
+    for(const {move} of moves){
+      const t=afterMove(s,move,actor);
+      const utility=maxNSearch(t,depth-1,beam);
+      if(utility[actor]>bestV){bestV=utility[actor];best=utility;}
+    }
+    return best||patternUtilities(s);
+  }
+  function chooseBot(s) {
+    const p=s.current, moves=legalMoves(s);
+    if(!moves.length)return null;
+    const ownWins=winningMoves(s,p);
+    if(ownWins.length)return ownWins[Math.floor(Math.random()*ownWins.length)];
+    const ranked=orderedMoves(s,p);
+    if(ui.difficulty.value==='casual'){
+      if(Math.random()<.38)return ranked[0].move;
+      return ranked[Math.floor(Math.random()*Math.min(5,ranked.length))].move;
+    }
+    if(ui.difficulty.value==='tactical')return ranked[0].move;
+    // In multiplayer, each agent maximizes its own utility (MaxN), not a coalition's.
+    // A tactical safeguard prevents missing a win on the very next player's turn.
+    const depth=3,beam=5;
+    const viable=ranked.filter(({move})=>{
+      const t=afterMove(s,move,p);
+      return winningMoves(t,t.current).length===0;
+    });
+    const candidates=(viable.length?viable:ranked).slice(0,7);
+    let best=candidates[0].move,bestScore=-Infinity;
+    for(const {move,score} of candidates){
+      const t=afterMove(s,move,p);
+      const util=maxNSearch(t,depth-1,beam);
+      const v=util[p]+Math.max(-500,Math.min(500,score))*.15;
+      if(v>bestScore){bestScore=v;best=move;}
+    }
+    return best;
+  }
+  function scheduleBots(){
+    if(timer!==null){clearTimeout(timer);timer=null;}
+    if(!state||state.winner!==null||state.current===0)return;
+    const token=generation;
+    timer=setTimeout(()=>{
+      timer=null;if(token!==generation||!state||state.winner!==null||state.current===0)return;
+      const move=chooseBot(state);if(move===null)return;
+      perform(move,false);
+    },ui.difficulty.value==='strategic'?390:310);
+  }
+  function perform(move,human){
+    if(!state||state.winner!==null||Boolean(human)!==(state.current===0))return;
+    if(!legalMoves(state).includes(move))return;
+    if(human)roundHistory.push(copyState(state));
+    const actor=state.current;
+    const next=afterMove(state,move,actor);
+    if(!next)return;
+    state=next;
+    if(state.winner!==null){if(state.winner===0)results.win++;else results.loss++;}
+    render();scheduleBots();
+  }
+  function reset(){generation++;if(timer!==null){clearTimeout(timer);timer=null;}state=fresh();roundHistory=[];lastColumns=state.cols;render();scheduleBots();}
+  function undo(){if(!roundHistory.length)return;generation++;if(timer!==null){clearTimeout(timer);timer=null;}
+    if(state.winner!==null){if(state.winner===0)results.win=Math.max(0,results.win-1);else results.loss=Math.max(0,results.loss-1);}
+    state=roundHistory.pop();render();scheduleBots();
+  }
+  function elt(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
+  function render(){
+    if(!state)return;
+    const humanTurn=state.current===0&&state.winner===null;
+    const openSide=humanTurn&&canExpand(state);
+    ui.growLeft.disabled=!openSide;ui.growRight.disabled=!openSide;
+    ui.growLeft.setAttribute('aria-label','Add a left column and drop your piece');ui.growRight.setAttribute('aria-label','Add a right column and drop your piece');
+    ui.undo.disabled=!roundHistory.length;ui.wins.textContent=String(results.win);ui.losses.textContent=String(results.loss);
+    ui.dimensions.textContent=`${state.cols} × ${state.rows} · Move ${state.moves}`;
+    if(state.winner!==null){ui.status.textContent=state.winner===0?'🎉 You connected four!':`${names[state.winner]} connected four!`;ui.detail.textContent='Game over. Undo the last round or start a new game.';}
+    else if(humanTurn){ui.status.textContent='Your turn';ui.detail.textContent=openSide?'Drop in a column, or expand left/right.':'Choose a column. Full columns expand upward.';}
+    else {ui.status.textContent=`${names[state.current]} is thinking…`;ui.detail.textContent='Bots make their own moves in turn order.';}
+    ui.winbanner.hidden=state.winner===null;
+    if(state.winner!==null)ui.winbanner.textContent=state.winner===0?'Victory! Try changing the bot strength or number of rivals.':`${names[state.winner]} wins this time. Undo to explore another move.`;
+    ui.players.replaceChildren();
+    let order=[];for(let p=ui.start.value==='first'?0:1,i=0;i<state.n;i++,p=(p+1)%state.n)order.push(p);
+    for(const p of order){const item=elt('div','player'+(state.winner===null&&state.current===p?' active':''));const disc=elt('div','disc');disc.style.background=colors[p];const label=elt('div','name',names[p]);const role=elt('div','role',p===0?'HUMAN':'BOT');item.append(disc,label,role);ui.players.append(item);}
+    ui.board.style.setProperty('--ncol',state.cols);
+    const hintCols=new Set();if(ui.hints.checked&&humanTurn)for(const m of winningMoves(state,0))if(Number.isInteger(m))hintCols.add(m);
+    ui.drops.replaceChildren();
+    const wins=new Set(state.winning.map(p=>`${p.row},${p.col}`));
+    const dropsFrag=document.createDocumentFragment(),cellsFrag=document.createDocumentFragment();
+    for(let c=0;c<state.cols;c++){
+      const d=elt('button','drop');d.type='button';d.disabled=!humanTurn;d.title=`Drop into column ${c+1}`;d.setAttribute('aria-label',`Drop into column ${c+1}`);
+      d.append(elt('span','number',String(c+1)),elt('span','arrow','↓'));
+      if(hintCols.has(c))d.append(elt('span','winning-dot'));
+      d.addEventListener('click',()=>perform(c,true));dropsFrag.append(d);
+    }
+    for(let r=state.rows-1;r>=0;r--)for(let c=0;c<state.cols;c++){
+      const v=state.board[r][c],cell=elt('div','cell'+(v!==null?' p'+v:'')+(state.last?.row===r&&state.last.col===c?' latest':'')+(wins.has(`${r},${c}`)?' winline':'')+(v===null&&hintCols.has(c)&&findDropRow(state,c)===r?' hint':''));
+      cell.title=`Column ${c+1}, row ${r+1}${v!==null?' — '+names[v]:''}`;
+      if(humanTurn){cell.style.cursor='pointer';cell.addEventListener('click',()=>perform(c,true));}
+      cellsFrag.append(cell);
+    }
+    ui.drops.append(dropsFrag);ui.cells.replaceChildren(cellsFrag);
+    // Keep newer pieces in view when the board grows beyond the viewport.
+    if(lastColumns!==state.cols){ui.scroll.scrollLeft=state.last?.move==='left'?0:ui.scroll.scrollWidth;lastColumns=state.cols;}
+  }
+  ui.growLeft.addEventListener('click',()=>perform('left',true));ui.growRight.addEventListener('click',()=>perform('right',true));
+  ui.undo.addEventListener('click',undo);ui.reset.addEventListener('click',reset);
+  ui.count.addEventListener('change',reset);ui.size.addEventListener('change',reset);ui.start.addEventListener('change',reset);
+  ui.difficulty.addEventListener('change',()=>{generation++;render();scheduleBots();});
+  ui.hints.addEventListener('change',render);
+  document.addEventListener('keydown',e=>{
+    if(e.target.matches('select,input,textarea')||!state||state.current!==0||state.winner!==null||e.altKey||e.metaKey||e.ctrlKey)return;
+    const num=Number(e.key);if(Number.isInteger(num)&&num>=1&&num<=9&&num<=state.cols)perform(num-1,true);
+  });
+  reset();
+  // Lightweight inspection hooks for verifying the standalone prototype.
+  window.fourUnboundDebug={getState:()=>copyState(state), legalMoves:()=>legalMoves(state), legalMovesForState:legalMoves, reset, undo, afterMove, winningMoves, findWin, chooseBot};
+})();
+</script>
+</body>
+</html>

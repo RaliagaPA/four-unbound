@@ -17,6 +17,14 @@
   .logo span { color:var(--accent); }
   .subtitle { margin-top:7px; color:var(--muted); font-size:13px; letter-spacing:.2px; }
   .top-actions { display:flex; align-items:center; flex-wrap:wrap; gap:9px; }
+  .language-switch { display:flex; gap:4px; padding:4px; background:#19283d; border:1px solid #547193; border-radius:11px; }
+  .language-switch button { min-height:42px; min-width:106px; padding:9px 12px; border:1px solid transparent; border-radius:8px; background:transparent; color:#c8d9ed; font-size:14px; font-weight:850; }
+  .language-switch button[aria-pressed="true"] { background:var(--accent); color:#21202b; box-shadow:0 2px 8px #0003; }
+  .language-switch button:hover:not([aria-pressed="true"]) { background:#304860; color:white; }
+  .guide { background:rgba(20,31,49,.96); border:1px solid var(--border); border-radius:14px; margin-bottom:18px; padding:14px 19px; font-size:13px; line-height:1.6; color:#cadbef; }
+  .guide p { margin:0; }
+  .guide p + p { margin-top:6px; }
+  .guide strong { color:#f1f6ff; }
   .button { min-height:38px; border:1px solid var(--border); border-radius:9px; background:#24344d; color:var(--fg); padding:8px 13px; font-weight:700; font-size:13px; transition:background .15s; }
   .button:hover:not(:disabled) { background:#36506d; }
   .button.primary { background:var(--accent); border-color:var(--accent); color:#21202b; }
@@ -77,34 +85,44 @@
   .wins { background:#263447; border-radius:10px; padding:10px 12px; font-size:12px; line-height:1.6; }
   .wins[hidden] { display:none; }
   @media(max-width:840px) { .layout { grid-template-columns:1fr; } .side { display:grid; grid-template-columns:1fr 1fr; gap:18px; } .side > .wide-on-mobile { grid-column:1 / -1; } }
-  @media(max-width:560px) { :root { --cell:35px; --gap:4px; } .shell { padding:16px 8px 25px; } .masthead { padding:0 8px; } .logo { font-size:25px; } .side { display:flex; } .play-frame { padding:16px 5px; min-height:340px; } .edge-button { width:35px; min-width:35px; font-size:10px; padding:5px 2px; } .edge-button strong { font-size:17px; } .play-line { gap:3px; } .cells { padding:5px; } .status { padding:15px 13px; } .state-title { font-size:16px; } }
+  @media(max-width:560px) { .language-switch { width:100%; justify-content:center; } .language-switch button { flex:1; } .top-actions { width:100%; } .guide { margin:0 8px 14px; padding:12px 14px; } :root { --cell:35px; --gap:4px; } .shell { padding:16px 8px 25px; } .masthead { padding:0 8px; } .logo { font-size:25px; } .side { display:flex; } .play-frame { padding:16px 5px; min-height:340px; } .edge-button { width:35px; min-width:35px; font-size:10px; padding:5px 2px; } .edge-button strong { font-size:17px; } .play-line { gap:3px; } .cells { padding:5px; } .status { padding:15px 13px; } .state-title { font-size:16px; } }
 </style>
 </head>
 <body>
 <div class="shell">
   <header class="masthead">
-    <div><div class="logo">FOUR <span>UNBOUND</span></div><div class="subtitle">An expanding Connect Four experiment · gravity stays on</div></div>
-    <div class="top-actions"><button class="button" id="undo" type="button">↶ Undo round</button><button class="button primary" id="reset" type="button">↻ New game</button></div>
+    <div><div class="logo">FOUR <span>UNBOUND</span></div><div class="subtitle" data-i18n="subtitle">An expanding Connect Four experiment · gravity stays on</div></div>
+    <div class="top-actions">
+      <div class="language-switch" role="group" aria-label="Language / Idioma">
+        <button type="button" id="langEn" lang="en" aria-pressed="true">English</button>
+        <button type="button" id="langEs" lang="es" aria-pressed="false">Español</button>
+      </div>
+      <button class="button" id="undo" type="button" data-i18n="undo">↶ Undo round</button>
+      <button class="button primary" id="reset" type="button" data-i18n="reset">↻ New game</button>
+    </div>
   </header>
+  <section class="guide" aria-label="Instructions" id="guide">
+    <p><strong data-i18n="guidePlayLabel">How to play:</strong> <span data-i18n="guidePlay">Click any column arrow or cell to drop a piece. Connect four to win. Pieces fall with gravity, and full columns expand upward. Side expansion unlocks when the bottom row has 0, 1, or 2 empty spaces left in 2-, 3-, or 4-player games, respectively.</span></p>
+    <p><strong data-i18n="guideControlsLabel">Controls:</strong> <span data-i18n="guideControls">Changing players, board size, or turn order restarts the game. Undo rewinds your last round.</span></p>
+  </section>
   <main class="layout">
-    <section class="stage" aria-label="Connect Four board">
+    <section class="stage" id="stage" aria-label="Connect Four board">
       <div class="status"><div><div class="state-title" id="status" aria-live="polite">Your turn</div><div class="state-sub" id="detail">Drop a piece into a column.</div></div><div class="pill" id="dimensions">7 × 6 · Move 0</div></div>
       <div class="play-frame"><div class="play-line">
-        <button type="button" class="edge-button" id="growLeft" title="Place in a new left column when the bottom row has at most (players - 2) empty cells"><strong>＋←</strong>new<br>left</button>
+        <button type="button" class="edge-button" id="growLeft" title="Place in a new left column when the bottom row has at most (players - 2) empty cells"><strong>＋←</strong><span data-i18n="newLeft">new left</span></button>
         <div class="scroll" id="scroll"><div class="board" id="board"><div class="drop-buttons" id="drops" aria-label="Choose a column"></div><div class="cells" id="cells"></div></div></div>
-        <button type="button" class="edge-button" id="growRight" title="Place in a new right column when the bottom row has at most (players - 2) empty cells"><strong>→＋</strong>new<br>right</button>
+        <button type="button" class="edge-button" id="growRight" title="Place in a new right column when the bottom row has at most (players - 2) empty cells"><strong>→＋</strong><span data-i18n="newRight">new right</span></button>
       </div></div>
-      <div class="info-footer"><strong>Expansion rules:</strong> Pieces fall to the lowest free space. A full column grows the board upward when played. When the bottom row has at most (number of players − 2) empty cells left, you can place a piece in a brand-new left or right column. First to connect four wins.</div>
     </section>
-    <aside class="side" aria-label="Game options">
-      <div><h2 class="section-title">Match settings</h2><div class="settings">
-        <div class="setting"><label for="count">Players</label><select id="count"><option value="2">2 (1 bot)</option><option value="3" selected>3 (2 bots)</option><option value="4">4 (3 bots)</option></select></div>
-        <div class="setting"><label for="difficulty">Bot intelligence</label><select id="difficulty"><option value="casual">Casual</option><option value="tactical" selected>Tactical</option><option value="strategic">Strategic</option></select></div>
-        <div class="setting"><label for="size">Starting board</label><select id="size"><option value="7x6" selected>7 × 6</option><option value="9x8">9 × 8</option><option value="11x8">11 × 8</option><option value="5x4">5 × 4</option></select></div>
-        <div class="setting"><label for="start">You play</label><select id="start"><option value="first" selected>First</option><option value="last">Last</option></select></div>
+    <aside class="side" id="side" aria-label="Game options">
+      <div><h2 class="section-title" data-i18n="settingsTitle">Match settings</h2><div class="settings">
+        <div class="setting"><label for="count" data-i18n="playersLabel">Players</label><select id="count"><option value="2" data-i18n="count2">2 (1 bot)</option><option value="3" data-i18n="count3" selected>3 (2 bots)</option><option value="4" data-i18n="count4">4 (3 bots)</option></select></div>
+        <div class="setting"><label for="difficulty" data-i18n="difficultyLabel">Bot intelligence</label><select id="difficulty"><option value="casual" data-i18n="casual">Casual</option><option value="tactical" data-i18n="tactical" selected>Tactical</option><option value="strategic" data-i18n="strategic">Strategic</option></select></div>
+        <div class="setting"><label for="size" data-i18n="boardSizeLabel">Starting board</label><select id="size"><option value="7x6" selected>7 × 6</option><option value="9x8">9 × 8</option><option value="11x8">11 × 8</option><option value="5x4">5 × 4</option></select></div>
+        <div class="setting"><label for="start" data-i18n="playOrderLabel">You play</label><select id="start"><option value="first" data-i18n="first" selected>First</option><option value="last" data-i18n="last">Last</option></select></div>
       </div></div>
-      <div><h2 class="section-title">Turn order</h2><div class="players" id="players"></div></div>
-      <div class="wide-on-mobile"><div class="rule" style="margin-bottom:17px"></div><label class="toggle"><input type="checkbox" id="hints" checked> Highlight my immediate winning moves</label><div class="metrics" style="margin-top:15px"><span>Games won: <strong id="wins">0</strong></span><span>Games lost: <strong id="losses">0</strong></span></div><div class="wins" id="winbanner" hidden></div><p class="micro">Click a column arrow or any cell to drop a piece. Side arrows unlock at 0, 1, or 2 empty bottom-row cells for 2, 3, or 4 players respectively. Change player count, board size or starting order to restart. Undo rewinds your whole last round.</p></div>
+      <div><h2 class="section-title" data-i18n="turnOrderTitle">Turn order</h2><div class="players" id="players"></div></div>
+      <div class="wide-on-mobile"><div class="rule" style="margin-bottom:17px"></div><label class="toggle"><input type="checkbox" id="hints" checked> <span data-i18n="hints">Highlight my immediate winning moves</span></label><div class="metrics" style="margin-top:15px"><span><span data-i18n="gamesWon">Games won:</span> <strong id="wins">0</strong></span><span><span data-i18n="gamesLost">Games lost:</span> <strong id="losses">0</strong></span></div><div class="wins" id="winbanner" hidden></div></div>
     </aside>
   </main>
 </div>
@@ -112,10 +130,80 @@
 (() => {
   'use strict';
   const colors = ['#ffb452','#36c2a9','#ae86ff','#ff7799'];
-  const names = ['You','Bot A','Bot B','Bot C'];
+  // Language changes only interface copy; match state and AI are untouched.
+  const translations = {
+    en: {
+      pageTitle: 'Four Unbound — Playable prototype', subtitle: 'An expanding Connect Four experiment · gravity stays on',
+      undo: '↶ Undo round', reset: '↻ New game',
+      guidePlayLabel: 'How to play:',
+      guidePlay: 'Click any column arrow or cell to drop a piece. Connect four to win. Pieces fall with gravity, and full columns expand upward. Side expansion unlocks when the bottom row has 0, 1, or 2 empty spaces left in 2-, 3-, or 4-player games, respectively.',
+      guideControlsLabel: 'Controls:', guideControls: 'Changing players, board size, or turn order restarts the game. Undo rewinds your last round.',
+      settingsTitle: 'Match settings', playersLabel: 'Players', count2: '2 (1 bot)', count3: '3 (2 bots)', count4: '4 (3 bots)',
+      difficultyLabel: 'Bot intelligence', casual: 'Casual', tactical: 'Tactical', strategic: 'Strategic',
+      boardSizeLabel: 'Starting board', playOrderLabel: 'You play', first: 'First', last: 'Last',
+      turnOrderTitle: 'Turn order', hints: 'Highlight my immediate winning moves', gamesWon: 'Games won:', gamesLost: 'Games lost:',
+      newLeft: 'new left', newRight: 'new right',
+      boardAria: 'Connect Four board', optionsAria: 'Game options', instructionsAria: 'Instructions', chooseColumn: 'Choose a column',
+      leftTip: 'Place in a new left column when the bottom row has at most (players - 2) empty cells',
+      rightTip: 'Place in a new right column when the bottom row has at most (players - 2) empty cells',
+      leftAria: 'Add a left column and drop your piece', rightAria: 'Add a right column and drop your piece',
+      you: 'You', human: 'HUMAN', bot: 'BOT', move: 'Move',
+      youWon: '🎉 You connected four!', botWon: '{player} connected four!',
+      gameOver: 'Game over. Undo the last round or start a new game.',
+      yourTurn: 'Your turn', canGrow: 'Drop in a column, or expand left/right.',
+      chooseOrGrow: 'Choose a column. Full columns expand upward.',
+      thinking: '{player} is thinking…', botsTurn: 'Bots make their own moves in turn order.',
+      victoryBanner: 'Victory! Try changing the bot strength or number of rivals.',
+      lossBanner: '{player} wins this time. Undo to explore another move.',
+      dropColumn: 'Drop into column {col}', cellTitle: 'Column {col}, row {row}'
+    },
+    es: {
+      pageTitle: 'Four Unbound — Prototipo jugable', subtitle: 'Un experimento de Conecta 4 expansible · con gravedad',
+      undo: '↶ Deshacer ronda', reset: '↻ Nueva partida',
+      guidePlayLabel: 'Cómo jugar:',
+      guidePlay: 'Haz clic en la flecha de una columna o en cualquier casilla para soltar una ficha. Conecta cuatro para ganar. Las fichas caen por gravedad y las columnas llenas se expanden hacia arriba. La expansión lateral se habilita cuando quedan 0, 1 o 2 espacios vacíos en la fila inferior en partidas de 2, 3 o 4 jugadores, respectivamente.',
+      guideControlsLabel: 'Controles:', guideControls: 'Cambiar la cantidad de jugadores, el tamaño del tablero o el orden de turnos reinicia la partida. Deshacer revierte tu última ronda completa.',
+      settingsTitle: 'Configuración de la partida', playersLabel: 'Jugadores', count2: '2 (1 bot)', count3: '3 (2 bots)', count4: '4 (3 bots)',
+      difficultyLabel: 'Inteligencia de los bots', casual: 'Casual', tactical: 'Táctico', strategic: 'Estratégico',
+      boardSizeLabel: 'Tablero inicial', playOrderLabel: 'Juegas', first: 'Primero', last: 'Último',
+      turnOrderTitle: 'Orden de turnos', hints: 'Resaltar mis jugadas ganadoras inmediatas', gamesWon: 'Partidas ganadas:', gamesLost: 'Partidas perdidas:',
+      newLeft: 'nueva izq.', newRight: 'nueva der.',
+      boardAria: 'Tablero de Conecta 4', optionsAria: 'Opciones de partida', instructionsAria: 'Instrucciones', chooseColumn: 'Elige una columna',
+      leftTip: 'Agrega una columna a la izquierda cuando la fila inferior tenga como máximo (jugadores − 2) espacios vacíos',
+      rightTip: 'Agrega una columna a la derecha cuando la fila inferior tenga como máximo (jugadores − 2) espacios vacíos',
+      leftAria: 'Añadir una columna a la izquierda y soltar tu ficha', rightAria: 'Añadir una columna a la derecha y soltar tu ficha',
+      you: 'Tú', human: 'PERSONA', bot: 'BOT', move: 'Jugada',
+      youWon: '🎉 ¡Conectaste cuatro!', botWon: '¡{player} conectó cuatro!',
+      gameOver: 'Fin de la partida. Deshaz la última ronda o comienza una nueva.',
+      yourTurn: 'Tu turno', canGrow: 'Suelta una ficha en una columna o expande el tablero a los lados.',
+      chooseOrGrow: 'Elige una columna. Las columnas llenas crecen hacia arriba.',
+      thinking: '{player} está pensando…', botsTurn: 'Los bots juegan por turnos.',
+      victoryBanner: '¡Victoria! Prueba otra dificultad o cambia la cantidad de rivales.',
+      lossBanner: 'Esta vez ganó {player}. Deshaz para probar otra jugada.',
+      dropColumn: 'Soltar en la columna {col}', cellTitle: 'Columna {col}, fila {row}'
+    }
+  };
+  let language = 'en';
+  const t = key => translations[language][key];
+  const fmt = (key, values) => t(key).replace(/\{(\w+)\}/g, (_, name) => String(values[name]));
+  const playerName = p => p===0?t('you'):'Bot '+String.fromCharCode(64+p);
   const $ = id => document.getElementById(id);
   const ui = { status:$('status'), detail:$('detail'), dimensions:$('dimensions'), board:$('board'), cells:$('cells'), drops:$('drops'), players:$('players'), scroll:$('scroll'), growLeft:$('growLeft'), growRight:$('growRight'), count:$('count'), difficulty:$('difficulty'), size:$('size'), start:$('start'), hints:$('hints'), undo:$('undo'), reset:$('reset'), wins:$('wins'), losses:$('losses'), winbanner:$('winbanner') };
   let state, roundHistory=[], timer=null, generation=0, results={win:0,loss:0}, lastColumns=0;
+  function applyLanguage(code) {
+    language = code;
+    document.documentElement.lang = code;
+    document.title = t('pageTitle');
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    $('langEn').setAttribute('aria-pressed',String(code==='en'));
+    $('langEs').setAttribute('aria-pressed',String(code==='es'));
+    $('stage').setAttribute('aria-label',t('boardAria'));
+    $('side').setAttribute('aria-label',t('optionsAria'));
+    $('guide').setAttribute('aria-label',t('instructionsAria'));
+    ui.drops.setAttribute('aria-label',t('chooseColumn'));
+    ui.growLeft.title=t('leftTip');ui.growRight.title=t('rightTip');
+    render();
+  }
   function fresh() { const [cols,rows]=ui.size.value.split('x').map(Number); const n=Number(ui.count.value); return { board:Array.from({length:rows},()=>Array(cols).fill(null)), cols, rows, n, current:ui.start.value==='first'?0:1, winner:null, winning:[], last:null, moves:0 }; }
   function copyState(s) { return {...s,board:s.board.map(row=>row.slice()),last:s.last?{...s.last}:null,winning:s.winning.map(v=>({...v}))}; }
   function canExpand(s) { return s.board[0].filter(x=>x===null).length <= s.n - 2; }
@@ -276,31 +364,31 @@
     const humanTurn=state.current===0&&state.winner===null;
     const openSide=humanTurn&&canExpand(state);
     ui.growLeft.disabled=!openSide;ui.growRight.disabled=!openSide;
-    ui.growLeft.setAttribute('aria-label','Add a left column and drop your piece');ui.growRight.setAttribute('aria-label','Add a right column and drop your piece');
+    ui.growLeft.setAttribute('aria-label',t('leftAria'));ui.growRight.setAttribute('aria-label',t('rightAria'));
     ui.undo.disabled=!roundHistory.length;ui.wins.textContent=String(results.win);ui.losses.textContent=String(results.loss);
-    ui.dimensions.textContent=`${state.cols} × ${state.rows} · Move ${state.moves}`;
-    if(state.winner!==null){ui.status.textContent=state.winner===0?'🎉 You connected four!':`${names[state.winner]} connected four!`;ui.detail.textContent='Game over. Undo the last round or start a new game.';}
-    else if(humanTurn){ui.status.textContent='Your turn';ui.detail.textContent=openSide?'Drop in a column, or expand left/right.':'Choose a column. Full columns expand upward.';}
-    else {ui.status.textContent=`${names[state.current]} is thinking…`;ui.detail.textContent='Bots make their own moves in turn order.';}
+    ui.dimensions.textContent=`${state.cols} × ${state.rows} · ${t('move')} ${state.moves}`;
+    if(state.winner!==null){ui.status.textContent=state.winner===0?t('youWon'):fmt('botWon',{player:playerName(state.winner)});ui.detail.textContent=t('gameOver');}
+    else if(humanTurn){ui.status.textContent=t('yourTurn');ui.detail.textContent=t(openSide?'canGrow':'chooseOrGrow');}
+    else {ui.status.textContent=fmt('thinking',{player:playerName(state.current)});ui.detail.textContent=t('botsTurn');}
     ui.winbanner.hidden=state.winner===null;
-    if(state.winner!==null)ui.winbanner.textContent=state.winner===0?'Victory! Try changing the bot strength or number of rivals.':`${names[state.winner]} wins this time. Undo to explore another move.`;
+    if(state.winner!==null)ui.winbanner.textContent=state.winner===0?t('victoryBanner'):fmt('lossBanner',{player:playerName(state.winner)});
     ui.players.replaceChildren();
     let order=[];for(let p=ui.start.value==='first'?0:1,i=0;i<state.n;i++,p=(p+1)%state.n)order.push(p);
-    for(const p of order){const item=elt('div','player'+(state.winner===null&&state.current===p?' active':''));const disc=elt('div','disc');disc.style.background=colors[p];const label=elt('div','name',names[p]);const role=elt('div','role',p===0?'HUMAN':'BOT');item.append(disc,label,role);ui.players.append(item);}
+    for(const p of order){const item=elt('div','player'+(state.winner===null&&state.current===p?' active':''));const disc=elt('div','disc');disc.style.background=colors[p];const label=elt('div','name',playerName(p));const role=elt('div','role',t(p===0?'human':'bot'));item.append(disc,label,role);ui.players.append(item);}
     ui.board.style.setProperty('--ncol',state.cols);
     const hintCols=new Set();if(ui.hints.checked&&humanTurn)for(const m of winningMoves(state,0))if(Number.isInteger(m))hintCols.add(m);
     ui.drops.replaceChildren();
     const wins=new Set(state.winning.map(p=>`${p.row},${p.col}`));
     const dropsFrag=document.createDocumentFragment(),cellsFrag=document.createDocumentFragment();
     for(let c=0;c<state.cols;c++){
-      const d=elt('button','drop');d.type='button';d.disabled=!humanTurn;d.title=`Drop into column ${c+1}`;d.setAttribute('aria-label',`Drop into column ${c+1}`);
+      const d=elt('button','drop');d.type='button';d.disabled=!humanTurn;d.title=fmt('dropColumn',{col:c+1});d.setAttribute('aria-label',fmt('dropColumn',{col:c+1}));
       d.append(elt('span','number',String(c+1)),elt('span','arrow','↓'));
       if(hintCols.has(c))d.append(elt('span','winning-dot'));
       d.addEventListener('click',()=>perform(c,true));dropsFrag.append(d);
     }
     for(let r=state.rows-1;r>=0;r--)for(let c=0;c<state.cols;c++){
       const v=state.board[r][c],cell=elt('div','cell'+(v!==null?' p'+v:'')+(state.last?.row===r&&state.last.col===c?' latest':'')+(wins.has(`${r},${c}`)?' winline':'')+(v===null&&hintCols.has(c)&&findDropRow(state,c)===r?' hint':''));
-      cell.title=`Column ${c+1}, row ${r+1}${v!==null?' — '+names[v]:''}`;
+      cell.title=fmt('cellTitle',{col:c+1,row:r+1})+(v!==null?' — '+playerName(v):'');
       if(humanTurn){cell.style.cursor='pointer';cell.addEventListener('click',()=>perform(c,true));}
       cellsFrag.append(cell);
     }
@@ -313,11 +401,14 @@
   ui.count.addEventListener('change',reset);ui.size.addEventListener('change',reset);ui.start.addEventListener('change',reset);
   ui.difficulty.addEventListener('change',()=>{generation++;render();scheduleBots();});
   ui.hints.addEventListener('change',render);
+  $('langEn').addEventListener('click',()=>applyLanguage('en'));
+  $('langEs').addEventListener('click',()=>applyLanguage('es'));
   document.addEventListener('keydown',e=>{
     if(e.target.matches('select,input,textarea')||!state||state.current!==0||state.winner!==null||e.altKey||e.metaKey||e.ctrlKey)return;
     const num=Number(e.key);if(Number.isInteger(num)&&num>=1&&num<=9&&num<=state.cols)perform(num-1,true);
   });
   reset();
+  applyLanguage('en');
   // Lightweight inspection hooks for verifying the standalone prototype.
   window.fourUnboundDebug={getState:()=>copyState(state), legalMoves:()=>legalMoves(state), legalMovesForState:legalMoves, reset, undo, afterMove, winningMoves, findWin, chooseBot};
 })();

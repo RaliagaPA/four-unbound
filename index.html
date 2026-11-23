@@ -205,8 +205,8 @@
     ui.growLeft.title=t('leftTip');ui.growRight.title=t('rightTip');
     render();
   }
-  function fresh() { const [cols,rows]=ui.size.value.split('x').map(Number); const n=Number(ui.count.value); return { board:Array.from({length:rows},()=>Array(cols).fill(null)), cols, rows, n, current:ui.start.value==='first'?0:1, winner:null, winning:[], last:null, moves:0 }; }
-  function copyState(s) { return {...s,board:s.board.map(row=>row.slice()),last:s.last?{...s.last}:null,winning:s.winning.map(v=>({...v}))}; }
+  function fresh() { const [cols,rows]=ui.size.value.split('x').map(Number); const n=Number(ui.count.value); return { board:Array.from({length:rows},()=>Array(cols).fill(null)), cols, rows, n, current:ui.start.value==='first'?0:1, winner:null, winning:[], last:null, lastByPlayer:Array(n).fill(null), moves:0 }; }
+  function copyState(s) { return {...s,board:s.board.map(row=>row.slice()),last:s.last?{...s.last}:null,lastByPlayer:s.lastByPlayer.map(pos=>pos?{...pos}:null),winning:s.winning.map(v=>({...v}))}; }
   function canExpand(s) { return s.board[0].filter(x=>x===null).length <= s.n - 2; }
   function legalMoves(s) { if(s.winner!==null) return []; const a=Array.from({length:s.cols},(_,i)=>i); if(canExpand(s)){a.push('left','right')} return a; }
   function findDropRow(s,col) { for(let r=0;r<s.rows;r++)if(s.board[r][col]===null) return r; return s.rows; }
@@ -229,12 +229,13 @@
     if(move==='left'||move==='right') {
       if(!canExpand(t))return null;
       for(const row of t.board) { if(move==='left')row.unshift(null);else row.push(null); }
+      if(move==='left')for(const pos of t.lastByPlayer)if(pos)pos.col++;
       t.cols++; col=move==='left'?0:t.cols-1;
     }else {col=Number(move);if(!Number.isInteger(col)||col<0||col>=t.cols)return null;}
     const r=findDropRow(t,col);
     if(r===t.rows){t.board.push(Array(t.cols).fill(null));t.rows++;}
     t.board[r][col]=player;
-    t.last={row:r,col,player,move}; t.moves++;
+    t.last={row:r,col,player,move}; t.lastByPlayer[player]={row:r,col}; t.moves++;
     t.winning=findWin(t,r,col,player);
     if(t.winning.length)t.winner=player;
     else t.current=(player+1)%t.n;
@@ -388,7 +389,7 @@
       d.addEventListener('click',()=>perform(c,true));dropsFrag.append(d);
     }
     for(let r=state.rows-1;r>=0;r--)for(let c=0;c<state.cols;c++){
-      const v=state.board[r][c],cell=elt('div','cell'+(v!==null?' p'+v:'')+(state.last?.row===r&&state.last.col===c?' latest':'')+(wins.has(`${r},${c}`)?' winline':'')+(v===null&&hintCols.has(c)&&findDropRow(state,c)===r?' hint':''));
+      const v=state.board[r][c],cell=elt('div','cell'+(v!==null?' p'+v:'')+(v!==null&&state.lastByPlayer[v]?.row===r&&state.lastByPlayer[v].col===c?' latest':'')+(wins.has(`${r},${c}`)?' winline':'')+(v===null&&hintCols.has(c)&&findDropRow(state,c)===r?' hint':''));
       cell.title=fmt('cellTitle',{col:c+1,row:r+1})+(v!==null?' — '+playerName(v):'');
       if(humanTurn){cell.style.cursor='pointer';cell.addEventListener('click',()=>perform(c,true));}
       cellsFrag.append(cell);

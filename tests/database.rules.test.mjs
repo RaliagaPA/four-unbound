@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { before, after, beforeEach, test } from 'node:test';
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import { ref, set, get, update, remove } from 'firebase/database';
+import { ref, set, get, update, remove, serverTimestamp } from 'firebase/database';
 
 let env;
 const base = Date.now();
@@ -14,6 +14,7 @@ const room = (opts = {}) => ({
   seats: { '1': {uid:host,name:'Jugador 1',color:0,joinedAt:base} },
   ...opts
 });
+const freshRoom = (opts = {}) => ({...room(), createdAt:serverTimestamp(),lastActivityAt:serverTimestamp(),seats:{'1':{...room().seats['1'],joinedAt:serverTimestamp()}},...opts});
 const db = uid => env.authenticatedContext(uid).database();
 const r = (uid,path) => ref(db(uid),path);
 async function seed(path,value) {
@@ -37,23 +38,23 @@ test('authenticated room read succeeds', async () => {
   await assertSucceeds(get(r(guest,'rooms/1')));
 });
 test('authenticated host can create room', async () => {
-  await assertSucceeds(set(r(host,'rooms/1'),room()));
+  await assertSucceeds(set(r(host,'rooms/1'),freshRoom()));
 });
 test('non-host cannot create room', async () => {
-  await assertFails(set(r(guest,'rooms/1'),room()));
+  await assertFails(set(r(guest,'rooms/1'),freshRoom()));
 });
 test('invalid room slot cannot be created', async () => {
-  await assertFails(set(r(host,'rooms/4'),room()));
+  await assertFails(set(r(host,'rooms/4'),freshRoom()));
 });
 test('room requires a 4-digit code', async () => {
-  await assertFails(set(r(host,'rooms/1'),room({code:'12'})));
+  await assertFails(set(r(host,'rooms/1'),freshRoom({code:'12'})));
 });
 test('repeated code on another slot rejected', async () => {
   await seed('rooms/1',room());
-  await assertFails(set(r(other,'rooms/2'),room({hostUid:other, seats:{'1':{uid:other,name:'Jugador 1',color:1,joinedAt:base}}})));
+  await assertFails(set(r(other,'rooms/2'),freshRoom({hostUid:other, seats:{'1':{uid:other,name:'Jugador 1',color:1,joinedAt:serverTimestamp()}}})));
 });
 test('new room host must own seat 1', async () => {
-  await assertFails(set(r(host,'rooms/1'),room({seats:{'1':{uid:other,name:'Jugador 1',color:0,joinedAt:base}}})));
+  await assertFails(set(r(host,'rooms/1'),freshRoom({seats:{'1':{uid:other,name:'Jugador 1',color:0,joinedAt:serverTimestamp()}}})));
 });
 test('guest can join available seat', async () => {
   await seed('rooms/1',room());
@@ -102,7 +103,7 @@ test('guest can remove expired room', async () => {
 test('host cannot create a room with fifth seat', async () => {
   const seats={...room().seats};
   for(let i=2;i<=5;i++)seats[i]={uid:'user'+i,name:'Player '+i,color:i,joinedAt:base};
-  await assertFails(set(r(host,'rooms/1'),room({seats})));
+  await assertFails(set(r(host,'rooms/1'),freshRoom({seats})));
 });
 test('host cannot create room with duplicate colors', async () => {
   const seats={...room().seats,'2':{uid:guest,name:'Jugador 2',color:0,joinedAt:base}};

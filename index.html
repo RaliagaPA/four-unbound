@@ -87,6 +87,37 @@
   .wins[hidden] { display:none; }
   @media(max-width:840px) { .layout { grid-template-columns:1fr; } .side { display:grid; grid-template-columns:1fr 1fr; gap:18px; } .side > .wide-on-mobile { grid-column:1 / -1; } }
   @media(max-width:560px) { .language-switch { width:100%; justify-content:center; } .language-switch button { flex:1; } .top-actions { width:100%; } .guide { margin:0 8px 14px; padding:12px 14px; } :root { --cell:35px; --gap:4px; } .shell { padding:16px 8px 25px; } .masthead { padding:0 8px; } .logo { font-size:25px; } .side { display:flex; } .play-frame { padding:16px 5px; min-height:340px; } .edge-button { width:35px; min-width:35px; font-size:10px; padding:5px 2px; } .edge-button strong { font-size:17px; } .play-line { gap:3px; } .cells { padding:5px; } .status { padding:15px 13px; } .state-title { font-size:16px; } }
+  /* Online lobby (kept separate from the existing solo game). */
+  #onlineRoot[hidden], #onlineHome[hidden], #onlineLobby[hidden], #onlineClosed[hidden] { display:none !important; }
+  body.multiplayer-view #guide, body.multiplayer-view .layout, body.multiplayer-view #undo, body.multiplayer-view #reset { display:none; }
+  .online-panel { max-width:810px; margin:0 auto; border:1px solid var(--border); border-radius:18px; padding:clamp(18px,4vw,32px); background:rgba(20,31,49,.97); box-shadow:0 10px 32px #02071340; }
+  .online-panel h1,.online-panel h2 { margin:0 0 9px; line-height:1.2; }
+  .online-panel h1 { font-size:clamp(23px,4vw,32px); }
+  .online-panel p { color:var(--muted); line-height:1.6; font-size:14px; }
+  .online-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px; }
+  .online-card { padding:18px; border:1px solid #39516c; border-radius:13px; background:#192a41; }
+  .online-card h2 { font-size:18px; }
+  .online-card .button { margin-top:11px; width:100%; }
+  .online-input { display:block; width:100%; padding:11px 12px; background:#122137; border:1px solid #4a6280; border-radius:9px; color:var(--fg); margin-top:9px; font-size:16px; }
+  .online-code-input { font-size:24px; font-weight:900; letter-spacing:8px; text-align:center; font-variant-numeric:tabular-nums; }
+  .online-message { min-height:24px; color:#ffd18b !important; margin:13px 0 0; }
+  .online-topline { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  .online-room-code { letter-spacing:5px; font-size:30px; font-weight:900; font-variant-numeric:tabular-nums; color:var(--accent); }
+  .online-roster { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:20px 0; }
+  .online-seat { border:1px solid #304760; background:#192a41; border-radius:10px; padding:13px; display:flex; align-items:center; gap:10px; font-size:14px; min-width:0; }
+  .online-seat.empty { color:#8ca4bf; border-style:dashed; }
+  .online-seat strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .online-disc { flex:0 0 21px; width:21px; height:21px; border-radius:50%; border:1px solid #ffffff5c; box-shadow:inset -2px -2px 4px #0005; }
+  .online-fields { display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-top:14px; }
+  .online-field label { display:block; color:#c3d1e4; font-size:13px; font-weight:750; }
+  .online-palette { display:flex; flex-wrap:wrap; gap:8px; padding:10px 0; }
+  .online-swatch { width:34px; height:34px; border:2px solid transparent; border-radius:50%; padding:0; }
+  .online-swatch[aria-pressed="true"] { outline:2px solid #fff; outline-offset:2px; }
+  .online-swatch:disabled { opacity:.25; cursor:not-allowed; }
+  .online-footer { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:20px; }
+  .online-footer .button { flex:0 0 auto; }
+  .online-stage-note { font-size:12px !important; margin:12px 0 0; }
+  @media(max-width:600px) { .online-grid,.online-roster,.online-fields { grid-template-columns:1fr; } .online-panel { margin:0 8px; } .online-room-code { font-size:24px; } }
 </style>
 </head>
 <body>
@@ -94,6 +125,7 @@
   <header class="masthead">
     <div><div class="logo">FOUR <span>UNBOUND</span></div><div class="subtitle" data-i18n="subtitle">An expanding Connect Four experiment · gravity stays on</div></div>
     <div class="top-actions">
+      <button class="button" id="onlineModeButton" type="button">Online multiplayer</button>
       <div class="language-switch" role="group" aria-label="Language / Idioma">
         <button type="button" id="langEn" lang="en" aria-pressed="true">English</button>
         <button type="button" id="langEs" lang="es" aria-pressed="false">Español</button>
@@ -126,6 +158,37 @@
       <div class="wide-on-mobile"><div class="rule" style="margin-bottom:17px"></div><label class="toggle"><input type="checkbox" id="hints" checked> <span data-i18n="hints">Highlight my immediate winning moves</span></label><div class="metrics" style="margin-top:15px"><span><span data-i18n="gamesWon">Games won:</span> <strong id="wins">0</strong></span><span><span data-i18n="gamesLost">Games lost:</span> <strong id="losses">0</strong></span></div><div class="wins" id="winbanner" hidden></div></div>
     </aside>
   </main>
+  <section id="onlineRoot" hidden aria-label="Multiplayer">
+    <div class="online-panel" id="onlineHome">
+      <h1 data-mp="title">Online multiplayer</h1>
+      <p data-mp="intro">Create a private room and play with friends on their own devices. Up to three rooms can be active at once.</p>
+      <div class="online-grid">
+        <div class="online-card"><h2 data-mp="createTitle">Create room</h2><p data-mp="createHint">Your friends join using a four-digit code.</p><button id="mpCreate" class="button primary" type="button" data-mp="createButton">Create a room</button></div>
+        <div class="online-card"><h2 data-mp="joinTitle">Join room</h2><label for="mpJoinCode" data-mp="codeLabel">Four-digit room code</label><input id="mpJoinCode" class="online-input online-code-input" type="text" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="0000" autocomplete="off" /><button id="mpJoin" class="button primary" type="button" data-mp="joinButton">Join room</button></div>
+      </div>
+      <p id="mpHomeMessage" class="online-message" role="status" aria-live="polite"></p>
+    </div>
+    <div class="online-panel" id="onlineLobby" hidden>
+      <div class="online-topline"><div><h1 data-mp="lobbyTitle">Waiting room</h1><span data-mp="roomLabel">Room code:</span> <span id="mpRoomCode" class="online-room-code"></span></div><button id="mpCopyCode" type="button" class="button" data-mp="copyCode">Copy code</button></div>
+      <p id="mpLobbyDetail" role="status"></p>
+      <div id="mpRoster" class="online-roster"></div>
+      <div class="online-fields">
+        <div class="online-field"><label for="mpName" data-mp="yourName">Your name (up to 20 characters)</label><input id="mpName" class="online-input" type="text" maxlength="20" autocomplete="off" /></div>
+        <div class="online-field"><label data-mp="yourColor">Your piece color</label><div id="mpPalette" class="online-palette" role="group" aria-label="Piece color"></div></div>
+      </div>
+      <div class="online-fields" id="mpHostSettings" hidden>
+        <div class="online-field"><label for="mpBoardSize" data-mp="boardSize">Starting board</label><select id="mpBoardSize" class="online-input"><option value="7x6">7 × 6</option><option value="9x8">9 × 8</option><option value="11x8">11 × 8</option><option value="5x4">5 × 4</option></select></div>
+        <div class="online-field"><label for="mpTurnOrder" data-mp="turnOrder">Turn order</label><select id="mpTurnOrder" class="online-input"><option value="fifo" data-mp="fifo">Join order</option><option value="random" data-mp="random">Random</option></select></div>
+      </div>
+      <p id="mpGuestSettings" class="online-stage-note" hidden></p>
+      <div class="online-footer"><button id="mpStart" class="button primary" type="button" disabled data-mp="start">Start game</button><button id="mpLeave" class="button" type="button" data-mp="leave">Leave room</button></div>
+      <p class="online-stage-note" data-mp="pendingPlay">Lobby only in this development stage. Starting and playing a match will be enabled when game synchronization is implemented.</p>
+      <p id="mpLobbyMessage" class="online-message" role="status" aria-live="polite"></p>
+    </div>
+    <div class="online-panel" id="onlineClosed" hidden>
+      <h1 id="mpClosedTitle"></h1><p id="mpClosedDetail"></p><button id="mpBackHome" class="button primary" type="button" data-mp="backHome">Back to multiplayer home</button>
+    </div>
+  </section>
 </div>
 <script>
 (() => {
@@ -406,7 +469,7 @@
   $('langEn').addEventListener('click',()=>applyLanguage('en'));
   $('langEs').addEventListener('click',()=>applyLanguage('es'));
   document.addEventListener('keydown',e=>{
-    if(e.target.matches('select,input,textarea')||!state||state.current!==0||state.winner!==null||e.altKey||e.metaKey||e.ctrlKey)return;
+    if(document.body.classList.contains('multiplayer-view')||e.target.matches('select,input,textarea')||!state||state.current!==0||state.winner!==null||e.altKey||e.metaKey||e.ctrlKey)return;
     const num=Number(e.key);if(Number.isInteger(num)&&num>=1&&num<=9&&num<=state.cols)perform(num-1,true);
   });
   reset();
@@ -414,6 +477,308 @@
   // Lightweight inspection hooks for verifying the standalone prototype.
   window.fourUnboundDebug={getState:()=>copyState(state), legalMoves:()=>legalMoves(state), legalMovesForState:legalMoves, reset, undo, afterMove, winningMoves, findWin, chooseBot};
 })();
+</script>
+<script type="module">
+// Online lobby is intentionally independent from the existing single-player engine.
+const $mp = id => document.getElementById(id);
+const palette = ['#ffb452','#36c2a9','#ae86ff','#ff7799','#55b8ff','#f4e66a','#ff8069','#8bdd70','#ec92df','#6a8aff','#f1bc8b','#b8d5df'];
+const copy = {
+  en: {
+    modeOnline:'Online multiplayer',modeLocal:'Local / bots',title:'Online multiplayer',intro:'Create a room and play with friends on their own devices. Up to three rooms can be active at once.',
+    createTitle:'Create room',createHint:'Your friends join using a four-digit code.',createButton:'Create a room',joinTitle:'Join room',codeLabel:'Four-digit room code',joinButton:'Join room',
+    lobbyTitle:'Waiting room',roomLabel:'Room code:',copyCode:'Copy code',yourName:'Your name (up to 20 characters)',yourColor:'Your piece color',boardSize:'Starting board',turnOrder:'Turn order',fifo:'Join order',random:'Random',start:'Start game',leave:'Leave room',backHome:'Back to multiplayer home',
+    pendingPlay:'Lobby only in this development stage. Starting and playing a match will be enabled when game synchronization is implemented.',
+    waiting:'Waiting for more players…',ready:'{count} players in the lobby. The host will start the match.',hostWaiting:'{count} players in the lobby. At least 2 are required.',empty:'Waiting for player {n}',you:'You',host:'Host',settings:'Board: {board} · Turn order: {order}',
+    invalidCode:'Enter exactly four digits.',notFound:'No active lobby with that code.',full:'This lobby is full.',notOpen:'This match has already started.',noRooms:'All three rooms are occupied. Try again later.',busy:'Connecting to Firebase…',
+    firebaseError:'Could not connect to the room. Check your connection and that Firebase Realtime Database rules are installed. {detail}',
+    invalidName:'Choose a name with 1 to 20 characters.',colorTaken:'That color was just taken. Please choose another.',copied:'Code copied.',codeCopyFail:'Could not copy automatically. Select the code above.',
+    closed:'Room closed',hostLeft:'The host left or lost their connection, so the room was closed.',idle:'Room closed for inactivity',idleDetail:'No player joined or made a move for 10 minutes.',roomGone:'The room is no longer available.',left:'You left the room.',error:'Could not complete the action. {detail}'
+  },
+  es: {
+    modeOnline:'Multijugador online',modeLocal:'Local / bots',title:'Multijugador online',intro:'Crea una sala para jugar con amigos desde sus dispositivos. Puede haber hasta tres salas activas al mismo tiempo.',
+    createTitle:'Crear sala',createHint:'Tus amigos ingresan con un código de cuatro dígitos.',createButton:'Crear una sala',joinTitle:'Unirse a sala',codeLabel:'Código de cuatro dígitos',joinButton:'Entrar a la sala',
+    lobbyTitle:'Sala de espera',roomLabel:'Código de sala:',copyCode:'Copiar código',yourName:'Tu nombre (máximo 20 caracteres)',yourColor:'Color de tu ficha',boardSize:'Tablero inicial',turnOrder:'Orden de turnos',fifo:'Orden de llegada',random:'Aleatorio',start:'Comenzar partida',leave:'Salir de la sala',backHome:'Volver al inicio de multijugador',
+    pendingPlay:'En esta etapa de desarrollo solo funciona el lobby. Podremos comenzar y jugar cuando implementemos la sincronización de partidas.',
+    waiting:'Esperando más jugadores…',ready:'Hay {count} jugadores en la sala. El anfitrión comenzará la partida.',hostWaiting:'Hay {count} jugadores. Se necesitan al menos 2.',empty:'Esperando jugador {n}',you:'Tú',host:'Anfitrión',settings:'Tablero: {board} · Orden: {order}',
+    invalidCode:'Ingresa exactamente cuatro dígitos.',notFound:'No existe una sala de espera activa con ese código.',full:'Esta sala está llena.',notOpen:'La partida ya comenzó.',noRooms:'Las tres salas están ocupadas. Inténtalo después.',busy:'Conectando a Firebase…',
+    firebaseError:'No se pudo conectar a la sala. Revisa tu conexión y que estén instaladas las reglas de Realtime Database. {detail}',
+    invalidName:'Ingresa un nombre de entre 1 y 20 caracteres.',colorTaken:'Ese color acaba de ser elegido. Escoge otro.',copied:'Código copiado.',codeCopyFail:'No se pudo copiar automáticamente. Selecciona el código que aparece arriba.',
+    closed:'Murió la sala',hostLeft:'El creador se desconectó o abandonó la sala, así que se cerró para todos.',idle:'Sala cerrada por inactividad',idleDetail:'Pasaron 10 minutos sin incorporaciones ni jugadas.',roomGone:'La sala ya no está disponible.',left:'Saliste de la sala.',error:'No se pudo completar la acción. {detail}'
+  }
+};
+const config = {
+  apiKey:'AIzaSyDAB2aohc3mrHw7jj-lh0wIkgi_Bn-_YQ4',
+  authDomain:'four-unbound.firebaseapp.com', databaseURL:'https://four-unbound-default-rtdb.firebaseio.com',
+  projectId:'four-unbound', storageBucket:'four-unbound.firebasestorage.app',
+  messagingSenderId:'557871158133', appId:'1:557871158133:web:26002070f97fd8adb793c'
+};
+let api, db, auth, userId, bootPromise, current = null, latestRoom = null, stopWatching = null, disconnectJob = null;
+let serverOffset = 0, changing = false, checkingTime = false;
+const language = () => document.documentElement.lang === 'es' ? 'es' : 'en';
+const T = (key, vars = {}) => (copy[language()][key] || key).replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
+const path = (slot, suffix = '') => `rooms/${slot}${suffix ? '/' + suffix : ''}`;
+const serverNow = () => Date.now() + serverOffset;
+const expired = room => !!room && Number(room.lastActivityAt || 0) <= serverNow() - 600000;
+const show = id => { for (const name of ['onlineHome','onlineLobby','onlineClosed']) $mp(name).hidden = name !== id; };
+const homeMessage = value => { $mp('mpHomeMessage').textContent = value; };
+const lobbyMessage = value => { $mp('mpLobbyMessage').textContent = value; };
+function translateOnline() {
+  document.querySelectorAll('[data-mp]').forEach(el => { el.textContent = T(el.dataset.mp); });
+  $mp('onlineModeButton').textContent = T(document.body.classList.contains('multiplayer-view') ? 'modeLocal' : 'modeOnline');
+  if (latestRoom && current) renderLobby(latestRoom);
+}
+function setBusy(value) {
+  changing = value;
+  $mp('mpCreate').disabled = value;
+  $mp('mpJoin').disabled = value;
+}
+async function connect() {
+  if (bootPromise) return bootPromise;
+  bootPromise = (async () => {
+    const ver = '12.6.0';
+    const [app, authentication, database] = await Promise.all([
+      import(`https://www.gstatic.com/firebasejs/${ver}/firebase-app.js`),
+      import(`https://www.gstatic.com/firebasejs/${ver}/firebase-auth.js`),
+      import(`https://www.gstatic.com/firebasejs/${ver}/firebase-database.js`)
+    ]);
+    const instance = app.initializeApp(config);
+    auth = authentication.getAuth(instance);
+    db = database.getDatabase(instance);
+    await auth.authStateReady();
+    userId = (auth.currentUser || (await authentication.signInAnonymously(auth)).user).uid;
+    api = database;
+    api.onValue(api.ref(db, '.info/serverTimeOffset'), snap => { serverOffset = snap.val() || 0; });
+  })().catch(error => { bootPromise = null; throw error; });
+  return bootPromise;
+}
+async function slots() {
+  const values = await Promise.all([1,2,3].map(async slot => ({slot,room:(await api.get(api.ref(db,path(slot)))).val()})));
+  // Any client can clean up stale slots when returning to the room list.
+  for (const entry of values) {
+    if (!expired(entry.room)) continue;
+    try { await api.remove(api.ref(db,path(entry.slot))); entry.room = null; }
+    catch { /* Another client may have refreshed or removed it; it stays occupied. */ }
+  }
+  return values;
+}
+function newCode(used) {
+  const numbers = new Uint32Array(1);
+  for (let i = 0; i < 40; i++) {
+    crypto.getRandomValues(numbers);
+    const code = String(numbers[0] % 10000).padStart(4,'0');
+    if (!used.has(code)) return code;
+  }
+  throw new Error('No available room code');
+}
+function sessionState(slot, seat, isHost) {
+  return {slot, seat:String(seat), isHost, uid:userId};
+}
+async function prepareRoom(session) {
+  current = session;
+  const roomRef = api.ref(db,path(current.slot));
+  const disconnectRef = current.isHost ? roomRef : api.ref(db,path(current.slot,`seats/${current.seat}`));
+  try {
+    disconnectJob = api.onDisconnect(disconnectRef);
+    await disconnectJob.remove();
+  } catch (error) {
+    // Never leave a participant in a room without a disconnect cleanup.
+    try { await api.remove(disconnectRef); } catch {}
+    current = null;
+    disconnectJob = null;
+    throw error;
+  }
+  show('onlineLobby');
+  latestRoom = null;
+  $mp('mpRoomCode').textContent = '';
+  $mp('mpName').value = '';
+  $mp('mpPalette').replaceChildren();
+  stopWatching = api.onValue(roomRef, snap => {
+    if (!current || current.slot !== session.slot) return;
+    if (!snap.exists()) { closeNotice(expired(latestRoom) ? 'idle' : 'host'); return; }
+    latestRoom = snap.val();
+    if (latestRoom.status !== 'lobby') { closeNotice('gone'); return; }
+    renderLobby(latestRoom);
+  }, error => { closeNotice('gone', error.message); });
+}
+async function createRoom() {
+  if (changing || current) return;
+  setBusy(true); homeMessage(T('busy'));
+  try {
+    await connect();
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const active = await slots();
+      const used = new Set(active.filter(e => e.room).map(e => e.room.code));
+      const available = active.filter(e => !e.room);
+      if (!available.length) { homeMessage(T('noRooms')); return; }
+      const code = newCode(used);
+      const now = api.serverTimestamp();
+      const room = { code, hostUid:userId, status:'lobby', boardSize:'7x6', turnOrder:'fifo',
+        createdAt:now, lastActivityAt:api.serverTimestamp(),
+        seats:{1:{uid:userId,name:'Jugador 1',color:0,joinedAt:api.serverTimestamp()}} };
+      for (const entry of available) {
+        try {
+          const result = await api.runTransaction(api.ref(db,path(entry.slot)),value => value === null ? room : undefined,{applyLocally:false});
+          if (result.committed) { await prepareRoom(sessionState(entry.slot,1,true)); homeMessage(''); return; }
+        } catch (error) {
+          if (error.code === 'PERMISSION_DENIED' || error.code === 'permission-denied') continue;
+          throw error;
+        }
+      }
+    }
+    homeMessage(T('noRooms'));
+  } catch (error) { homeMessage(T('firebaseError',{detail:error.message || ''})); }
+  finally { setBusy(false); }
+}
+async function joinRoom() {
+  if (changing || current) return;
+  const code = $mp('mpJoinCode').value.trim();
+  if (!/^\d{4}$/.test(code)) { homeMessage(T('invalidCode')); return; }
+  setBusy(true); homeMessage(T('busy'));
+  try {
+    await connect();
+    const found = (await slots()).find(e => e.room?.code === code);
+    if (!found) { homeMessage(T('notFound')); return; }
+    if (found.room.status !== 'lobby') { homeMessage(T('notOpen')); return; }
+    for (let seat = 2; seat <= 4; seat++) {
+      if (found.room.seats?.[seat]) continue;
+      const occupiedColors = new Set(Object.values(found.room.seats || {}).map(p => p.color));
+      const color = palette.findIndex((_,i) => !occupiedColors.has(i));
+      if (color < 0) { homeMessage(T('full')); return; }
+      const claim = {uid:userId,name:`Jugador ${seat}`,color,joinedAt:api.serverTimestamp()};
+      try {
+        const result = await api.runTransaction(api.ref(db,path(found.slot,`seats/${seat}`)),v => v === null ? claim : undefined,{applyLocally:false});
+        if (!result.committed) continue;
+        await prepareRoom(sessionState(found.slot,seat,false));
+        await api.set(api.ref(db,path(found.slot,'lastActivityAt')),api.serverTimestamp());
+        homeMessage(''); return;
+      } catch (error) {
+        // A simultaneous join may have selected this seat or color.
+        if (error.code === 'PERMISSION_DENIED' || error.code === 'permission-denied') {
+          const updated = (await api.get(api.ref(db,path(found.slot)))).val();
+          if (!updated || updated.status !== 'lobby') { homeMessage(T('notFound')); return; }
+          found.room = updated;
+          continue;
+        }
+        throw error;
+      }
+    }
+    homeMessage(T('full'));
+  } catch (error) { homeMessage(T('firebaseError',{detail:error.message || ''})); }
+  finally { setBusy(false); }
+}
+function renderLobby(room) {
+  if (!current) return;
+  $mp('mpRoomCode').textContent = room.code;
+  const seats = room.seats || {};
+  const number = Object.keys(seats).length;
+  $mp('mpLobbyDetail').textContent = T(current.isHost && number < 2 ? 'hostWaiting' : number < 2 ? 'waiting' : 'ready',{count:number});
+  const roster = $mp('mpRoster'); roster.replaceChildren();
+  for (let i=1;i<=4;i++) {
+    const player = seats[i];
+    const item = document.createElement('div'); item.className = 'online-seat' + (player ? '' : ' empty');
+    if (player) {
+      const disc = document.createElement('span'); disc.className='online-disc'; disc.style.background = palette[player.color] || palette[0];
+      const name = document.createElement('strong'); name.textContent = player.name;
+      const tag = document.createElement('span'); tag.className='micro'; tag.textContent = i === 1 ? T('host') : player.uid === current.uid ? T('you') : '';
+      item.append(disc,name,tag);
+    } else item.textContent = T('empty',{n:i});
+    roster.append(item);
+  }
+  const me = seats[current.seat];
+  if (!me) { closeNotice('gone'); return; }
+  if (document.activeElement !== $mp('mpName')) $mp('mpName').value = me.name;
+  const colorsUsed = new Set(Object.values(seats).filter(p=>p.uid!==current.uid).map(p=>p.color));
+  const colorRoot = $mp('mpPalette'); colorRoot.replaceChildren();
+  for (let i=0;i<palette.length;i++) {
+    const button = document.createElement('button'); button.type='button'; button.className='online-swatch';
+    button.style.background = palette[i]; button.setAttribute('aria-label',`Color ${i+1}`);
+    button.setAttribute('aria-pressed',String(me.color === i)); button.disabled = colorsUsed.has(i);
+    button.addEventListener('click',()=>setColor(i)); colorRoot.append(button);
+  }
+  $mp('mpHostSettings').hidden = !current.isHost;
+  $mp('mpGuestSettings').hidden = current.isHost;
+  $mp('mpGuestSettings').textContent = T('settings',{board:room.boardSize,order:T(room.turnOrder === 'random' ? 'random' : 'fifo')});
+  $mp('mpBoardSize').value = room.boardSize;
+  $mp('mpTurnOrder').value = room.turnOrder;
+  // Match start is deliberately disabled until the synchronized game exists.
+  $mp('mpStart').disabled = true;
+  $mp('mpStart').hidden = !current.isHost;
+}
+async function setColor(i) {
+  if (!current || !latestRoom) return;
+  try { await api.set(api.ref(db,path(current.slot,`seats/${current.seat}/color`)),i); lobbyMessage(''); }
+  catch { lobbyMessage(T('colorTaken')); }
+}
+async function changeName() {
+  if (!current) return;
+  const name = $mp('mpName').value.trim();
+  if (!name || name.length > 20) { lobbyMessage(T('invalidName')); return; }
+  try { await api.set(api.ref(db,path(current.slot,`seats/${current.seat}/name`)),name); lobbyMessage(''); }
+  catch (error) { lobbyMessage(T('error',{detail:error.message || ''})); }
+}
+async function hostSetting(field, value) {
+  if (!current?.isHost) return;
+  try { await api.set(api.ref(db,path(current.slot,field)),value); lobbyMessage(''); }
+  catch (error) { lobbyMessage(T('error',{detail:error.message || ''})); }
+}
+async function leaveRoom() {
+  const leaving = current;
+  if (!leaving) return;
+  current = null;
+  stopWatching?.(); stopWatching = null;
+  latestRoom = null;
+  const cleanup = disconnectJob; disconnectJob = null;
+  const location = leaving.isHost ? path(leaving.slot) : path(leaving.slot,`seats/${leaving.seat}`);
+  let removed = false;
+  try { await api.remove(api.ref(db,location)); removed = true; } catch {}
+  if (removed) try { await cleanup?.cancel(); } catch {}
+  show('onlineHome'); homeMessage(T('left'));
+}
+function closeNotice(reason, detail) {
+  if (!current) return;
+  current = null; latestRoom = null;
+  stopWatching?.(); stopWatching = null;
+  disconnectJob = null;
+  $mp('mpClosedTitle').textContent = T(reason === 'idle' ? 'idle' : 'closed');
+  $mp('mpClosedDetail').textContent = detail || T(reason === 'idle' ? 'idleDetail' : reason === 'host' ? 'hostLeft' : 'roomGone');
+  show('onlineClosed');
+}
+async function checkExpiry() {
+  if (checkingTime || !current || !latestRoom || !expired(latestRoom)) return;
+  checkingTime = true;
+  try {
+    await api.remove(api.ref(db,path(current.slot)));
+    if (current) closeNotice('idle');
+  } catch { /* Server-side rules decide whether the room is really expired. */ }
+  finally { checkingTime = false; }
+}
+$mp('onlineModeButton').addEventListener('click', async () => {
+  if (document.body.classList.contains('multiplayer-view')) {
+    if (current) await leaveRoom();
+    document.body.classList.remove('multiplayer-view'); $mp('onlineRoot').hidden = true;
+  } else {
+    document.body.classList.add('multiplayer-view'); $mp('onlineRoot').hidden = false;
+    if (!current) show('onlineHome');
+  }
+  translateOnline();
+});
+$mp('mpCreate').addEventListener('click', createRoom);
+$mp('mpJoin').addEventListener('click', joinRoom);
+$mp('mpJoinCode').addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g,'').slice(0,4); });
+$mp('mpJoinCode').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
+$mp('mpName').addEventListener('change',changeName);
+$mp('mpBoardSize').addEventListener('change',e=>hostSetting('boardSize',e.target.value));
+$mp('mpTurnOrder').addEventListener('change',e=>hostSetting('turnOrder',e.target.value));
+$mp('mpCopyCode').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($mp('mpRoomCode').textContent); lobbyMessage(T('copied')); }
+  catch { lobbyMessage(T('codeCopyFail')); }
+});
+$mp('mpLeave').addEventListener('click',leaveRoom);
+$mp('mpBackHome').addEventListener('click',()=>{ show('onlineHome'); homeMessage(''); });
+$mp('langEn').addEventListener('click',translateOnline);
+$mp('langEs').addEventListener('click',translateOnline);
+setInterval(checkExpiry,10000);
+translateOnline();
 </script>
 </body>
 </html>

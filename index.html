@@ -648,8 +648,8 @@ async function joinRoom() {
       try {
         const result = await api.runTransaction(api.ref(db,path(found.slot,`seats/${seat}`)),v => v === null ? claim : undefined,{applyLocally:false});
         if (!result.committed) continue;
-        await api.set(api.ref(db,path(found.slot,'lastActivityAt')),api.serverTimestamp());
         await prepareRoom(sessionState(found.slot,seat,false));
+        await api.set(api.ref(db,path(found.slot,'lastActivityAt')),api.serverTimestamp());
         homeMessage(''); return;
       } catch (error) {
         // A simultaneous join may have selected this seat or color.
